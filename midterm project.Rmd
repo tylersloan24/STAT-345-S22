@@ -17,10 +17,10 @@ Your role for the midterm project is that of data analyst intern at an NBA (prof
 
 Your data for the midterm project may come from a variety of sources, including the NBA directly, as well as Basketball-Reference, HoopsHype, and others. There are several ways to access the data, but perhaps the simplest is through the `nbastatR` package, which serves as a wrapper (or set of helper functions) for these various data sources. There is a lot of potentially useful information that can be found using this package; unfortunately, the documentation is somewhat inconsistent. For example, the documentation at https://www.rdocumentation.org/packages/nbastatR/versions/0.1.110202031 is pretty well-formatted and easy to navigate, but the current function names have changed a bit (see `?nbastatR` and click "Index"). 
 ```{r}
-install.packages("Rtools")
-install.packages("nbastatR")
-library("Rtools")
-library("nbastatR")
+
+#library(devtools)
+#install_github("abresler/nbastatR")
+#library(nbastatR)
 ```
 
 
@@ -36,6 +36,25 @@ library("nbastatR")
    - You'll want to figure out what the coordinates mean somehow. This might be through the documentation, but could also be determined using aspects of the data itself and the dimensions of an NBA court.
     - If possible, try to put a basketball court on the background of the image (you'll need to scale it appropriately).
 ```{r}
+
+library(devtools)
+library(nbastatR)
+library(ggplot2)
+?teams_shots
+shots98 <- teams_shots(teams = "Chicago Bulls", seasons = 1998)
+shots99 <- teams_shots(teams = "Chicago Bulls", seasons = 1999)
+shots00 <- teams_shots(teams = "Chicago Bulls", seasons = 2000)
+past_shots <- rbind(shots00,shots98,shots99)
+past_shots_graphic <- ggplot(data = past_shots, aes(x = locationX, y = locationY)) + geom_point() + xlim(-300, 300) + ylim(-100, 500)
+past_shots_graphic
+
+
+shots18 <- teams_shots(teams = "Chicago Bulls", seasons = 2018)
+shots19 <- teams_shots(teams = "Chicago Bulls", seasons = 2019)
+shots20 <- teams_shots(teams = "Chicago Bulls", seasons = 2020)
+present_shots <- rbind(shots18,shots19,shots20)
+present_shots_graphic <- ggplot(data = present_shots, aes(x = locationX, y = locationY)) + geom_point() + xlim(-300, 300) + ylim(-100, 500)
+present_shots_graphic
 
 ```
     
