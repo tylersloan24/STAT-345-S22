@@ -1,0 +1,213 @@
+---
+title: "STAT 345 Midterm Project"
+font: 12pt
+date: "Due April 1"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+> "Our offense is like the Pythagorean Theorem. There is no answer!", _Shaquille O'Neal_
+
+
+## The Background
+
+Your role for the midterm project is that of data analyst intern at an NBA (professional basketball) team. Your direct supervisor (also part of the analytics team) has asked you to create a data visualization to illustrate how (or if) the team's shots have changed over time. After some initial clarifying questions, your supervisor confessed that they had seen some pretty cool shot charts at http://savvastjortjoglou.com/nba-shot-sharts.html and would like to extend the ideas a bit. 
+
+Your data for the midterm project may come from a variety of sources, including the NBA directly, as well as Basketball-Reference, HoopsHype, and others. There are several ways to access the data, but perhaps the simplest is through the `nbastatR` package, which serves as a wrapper (or set of helper functions) for these various data sources. There is a lot of potentially useful information that can be found using this package; unfortunately, the documentation is somewhat inconsistent. For example, the documentation at https://www.rdocumentation.org/packages/nbastatR/versions/0.1.110202031 is pretty well-formatted and easy to navigate, but the current function names have changed a bit (see `?nbastatR` and click "Index"). 
+```{r}
+
+#library(devtools)
+#install_github("abresler/nbastatR")
+#library(nbastatR)
+```
+
+
+## The Tasks
+
+1. (30 points) Produce a graphic displaying the shot locations for a particular team over several years. Some notes:
+
+   - Colors should be chosen to reflect the team, if possible.
+   - There are likely many overlaid points -- handle this by either binning these by location, or use opacity.
+   - Incorporate information about whether the shot was made or not (shape, color, etc.).
+   - The graphic should be well-labeled, titled, etc.
+   - Start with a graph for a single year, then extend to several years. Up to 20 years of shot data is available. Either facet these by year or animate using the years.
+   - You'll want to figure out what the coordinates mean somehow. This might be through the documentation, but could also be determined using aspects of the data itself and the dimensions of an NBA court.
+    - If possible, try to put a basketball court on the background of the image (you'll need to scale it appropriately).
+```{r, echo=FALSE}
+
+
+
+library(devtools)
+library(nbastatR)
+library(ggplot2)
+
+library(gganimate)
+library(tidyverse)
+library(gapminder) #for some data
+library(gifski) #creation of gifs, could also use library(png)
+library(lubridate) #working with time variables
+library(maps) #for mapping with ggplot
+library(mapdata) #for mapping with ggplot
+library(transformr) #for changing chloropleths across time
+library(ggthemes) #extra color options
+
+Sys.setenv("VROOM_CONNECTION_SIZE" = 131072 * 2) #allows for loading in the data set from Github
+
+shots98 <- teams_shots(teams = "Chicago Bulls", seasons = 1998) #The main shot data of three seasons
+shots10 <- teams_shots(teams = "Chicago Bulls", seasons = 2010)
+shots20 <- teams_shots(teams = "Chicago Bulls", seasons = 2020)
+Bullsshots <- rbind(shots98,shots10,shots20) #Binding the shot data into one object so the data is easy to call upon in later code.
+
+  
+
+court <- ggplot(data=data.frame(x=1,y=1),aes(x*10,y*10))+
+   ###outside box:
+geom_path(data=data.frame(x=c(-27,-27,27,27,-27),y=c(-4,50,50,-4,-4)))+
+   ###key:
+geom_path(data=data.frame(x=c(-8,-8,8,8,-8),y=c(-4,14,14,-4,-4)))+
+   ###box inside the key:
+geom_path(data=data.frame(x=c(-6,-6,6,6,-6),y=c(-4,14,14,-4,-4)))+
+   ###restricted area semicircle:
+geom_path(data=data.frame(x=c(-4000:(-1)/1000,1:4000/1000),y=c(0+sqrt(4^2-c(-4000:(-1)/1000,1:4000/1000)^2))),aes(x=x*10,y=y*11))+
+   ###halfcourt semicircle:
+geom_path(data=data.frame(x=c(-6000:(-1)/1000,1:6000/1000),y=c(50-sqrt(6^2-c(-6000:(-1)/1000,1:6000/1000)^2))),aes(x=x*10,y=y*10))+
+   ###rim:
+geom_path(data=data.frame(x=c(-750:(-1)/1000,1:750/1000,750:1/1000,-1:-750/1000),y=c(c(-3+sqrt(0.75^2-c(-750:(-1)/1000,1:750/1000)^2)),c(-3-sqrt(0.75^2-c(750:1/1000,-1:-750/1000)^2)))),aes(x=x*10,y=y*10))+
+   ###backboard:
+geom_path(data=data.frame(x=c(-3,3),y=c(-4,-4)),lineend='butt')+
+   ###three-point line:
+geom_path(data=data.frame(x=c(-22,-22,-22000:(-1)/1000,1:22000/1000,22,22),y=c(-5,169/12,5.25+sqrt(23.75^2-c(-22000:(-1)/1000,1:22000/1000)^2),169/12,-5)),aes(x=x*10,y=y*8))+
+   ###fix aspect ratio to 1:1
+coord_fixed()
+#everything above is to form the basketball court for the data to appear on. 
+
+
+
+ finish <- court + geom_point(data=Bullsshots, aes(x=locationX,y=locationY, col=typeEvent),alpha=0.3) #This is putting the raw data onto the basketball court. Additionally, this separates whether a shot is made and whether a shot is missed along with the darkness of the points for visualization.
+ 
+ finish1 <- finish + theme_clean() + labs( y="Sideline", x="Baseline", col="Made or Missed Shot")  + theme_bw() + transition_time(yearSeason) + labs(title = "Bulls Made and Missed Shots", subtitle = 'Frame {frame} of {nframes}')+  scale_color_manual(values = c("Made Shot" = "red", "Missed Shot" = "black")) 
+ #This segment modifies the raw data on the basketball court into easier observation data. For example, the x-axis and y-axis are changed to Baseline and Sideline to show the viewer the reference point of the shots. Furthermore, the Made Shot and Missed shot colors are changed to red and black so they are easier to see and represent the Chicago Bulls. Also, there is the animation that showcases the changes in shots made and missed over time. Lastly, the Titles of both the legend and graph are changed to showcase their meaning is.
+ 
+ 
+ 
+ 
+ 
+ animate(finish1, nframes=3, fps =.25) #This edits the animation to showcase only three frames which represent how many seasons are in the data set and to set a timer on how long the frames show up.
+```
+
+ 
+  
+  
+
+    
+    
+   
+2. (30 points) Summarize the graphic/series of graphics into a digestible, bullet-point brief report for front-office staff. Some notes:
+
+   - The main body of the report should be very brief -- just the graphic(s) and the bullet-pointed list of findings, which should be short and clear.
+   - Include a more detailed explanation of these bullet points, for further reading by those interested. This section should follow the bullet-point section, but should be organized similarly for reference. 
+   - Your report to the front-office houldn't include any code.
+   - This report should be generated using RMarkdown. However, the choice of output type (Word, PDF, or HTML) is up to you (you could even make slides if you want to). 
+```{r}
+#* There is a clear difference in shots made and shots missed in the year 1998,2010,2020.
+
+#* 2020 shows that a majority of missed shots are just past the three-point line while a majority of made shots are close to the bracket around the restricted area.
+
+#* 2010 has more diversification in shots made and shots missed compared to 2020. Additionally, there is a new cluster of missed and made shots across the mid-range area with a slightly higher concentration at the top of the key. However, there is still a concentration of made shots close to the basket, but the concentration is not as concentrated to the basket as the concentration to the basket in 2020. 
+
+#* 1998 has a slightly more diversified in shots made and shots missed than 2010 with less 3 pointers missed and made. There is a slightly higher concentration of mid-range shots close to the sideline compared to the other two seasons. However, the concentration of shots made close to the basket is less than in the other two seasons. 
+
+#* It is important to note that for shots close to the basket the differences in location of shots made and shots missed are generally tied together. Additionally, shots significantly passed the three-point line are missed shots according to the graphic.
+
+```
+   
+   
+3. (30 points) Write and document clean, efficient, reproducible code. Some notes:
+
+   - This code will be viewed by your direct supervisor.
+   - The code file should include your code to gather, join, and clean the data; the code to generate the graphic(s) presented; and your commentary on the results (so, a single .rmd file, or an .rmd file that sources an .r file).
+   - Your code should be clean, organized, and reproducible. Remove unnecessary/scratch/exploratory code.
+   - Your code should be well commented. In particular, any decisions or judgement calls made in the analysis process should be explained/justified. Sections of code should be identified even if not functionalized (including purpose, data/argument inputs, analysis outputs).
+```{r}
+
+#see comments from problem 1
+```
+   
+   
+4. (10 points) Above and Beyond. Explore the data a bit, and create a graphic that uses (or incorporates) different information than what was used above. Some notes:
+
+   - Create an additional graphic that incorporates at least one additional variable not previously used. The additional data should be drawn from a different dataset (function call) than the original graphic used. These two (or more) datasets may need to be joined appropriately.
+   - You can either add more information to the plot above, or create a different plot. 
+   - Formatting, labelling, etc. are all important here too.
+   - Adding marginal densities or other "bells and whistles" might offer additional insight.
+   - This graphic should be included at the end of the report (after the more detailed explanations). 
+   - You should include a brief description of the graphic (highlighting the different/additional information used).
+```{r, echo=FALSE}
+
+library(dplyr)
+library(devtools)
+library(nbastatR)
+library(ggplot2)
+
+library(gganimate)
+library(tidyverse)
+library(gapminder) #for some data
+library(gifski) #creation of gifs, could also use library(png)
+library(lubridate) #working with time variables
+library(maps) #for mapping with ggplot
+library(mapdata) #for mapping with ggplot
+library(transformr) #for changing chloropleths across time
+library(ggthemes) #extra color options
+
+
+
+
+
+
+
+distshot <- c(mean(shots98$distanceShot),
+mean(shots10$distanceShot),
+mean(shots20$distanceShot))
+
+year <- c(1998,2010,2020)
+year <- data.frame(year)
+distshot <- data.frame(distshot)
+
+distanceshot<- Bullsshots %>%
+  group_by(yearSeason) %>%
+  summarize(mean(distanceShot))
+distanceshot
+
+a <- rename(distanceshot, "dist"= "mean(distanceShot)")
+
+
+ggplot(data = a, aes(x = yearSeason, y=dist)) + geom_col(fill = "red",width = 5 )
+
+
+
+
+
+
+
+#This is just a simply bar graph that shows as time has gone on in the NBA the average distance shot from the basket increases. 
+
+
+
+
+
+```
+   
+
+  
+## The Deliverables
+
+1. Upload your report and code file(s) to GitHub by 11:59am (noon) on Friday, April 1.
+2. Submit your report, code, and link to your GitHub repository by 11:59am (noon) on Friday, April 1.
+  
+  
+  
+  
+
+
